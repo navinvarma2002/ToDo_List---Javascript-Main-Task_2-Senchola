@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, red, rgb(3, 98, 136));
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        #auth, #todo-app {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 300px;
+            margin: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #6a82fb;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: black;
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background-color: #6a82fb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background-color: #5a72e0;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #error-message {
+            margin: 10px 0;
+            color: #fc5c7d;
+            font-weight: bold;
+        }
+
+        #todo-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        #todo-list li {
+            background: #f9f9f9;
+            color: #333;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 5px 0;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        #todo-list li:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 400px) {
+            #auth, #todo-app {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth">
+        <h2 id="auth-title" style="color: black;">Login</h2>
+        <input type="text" id="username" placeholder="Username" required />
+        <input type="password" id="password" placeholder="Password" required />
+        <button id="auth-button">Login</button>
+        <button id="switch-auth">Switch to Signup</button>
+        <div id="error-message"></div>
+    </div>
+
+    <div id="todo-app" class="hidden">
+        <h2 style="color: black;">Todo List</h2>
+        <input type="text" id="todo-input" placeholder="Add a new todo" />
+        <button id="add-todo">Add Todo</button>
+        <ul id="todo-list"></ul>
+        <button id="logout">Logout</button>
+    </div>
+
+    <script>
+        const authDiv = document.getElementById('auth');
+        const todoAppDiv = document.getElementById('todo-app');
+        const authButton = document.getElementById('auth-button');
+        const switchAuthButton = document.getElementById('switch-auth');
+        const todoInput = document.getElementById('todo-input');
+        const todoList = document.getElementById('todo-list');
+        const errorMessage = document.getElementById('error-message');
+        const logoutButton = document.getElementById('logout');
+
+        let isSignup = false;
+
+        function loadTodos() {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            const todos = JSON.parse(localStorage.getItem(`${loggedInUser}_todos`)) || [];
+            todos.forEach(todo => addTodoToDOM(todo));
+        }
+
+        function addTodoToDOM(todo) {
+            const li = document.createElement('li');
+            li.textContent = todo;
+            todoList.appendChild(li);
+        }
+
+        authButton.addEventListener('click', () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+
+            if (isSignup) {
+                if (users.find(user => user.username === username)) {
+                    errorMessage.textContent = 'Username already exists!';
+                } else {
+                    users.push({ username, password });
+                    localStorage.setItem('users', JSON.stringify(users));
+                    alert('Signup successful! Please log in.');
+                    isSignup = false;
+                    document.getElementById('auth-title').textContent = 'Login';
+                    authButton.textContent = 'Login';
+                }
+            } else {
+                const user = users.find(user => user.username === username && user.password === password);
+                if (user) {
+                    localStorage.setItem('loggedInUser', username);
+                    authDiv.classList.add('hidden');
+                    todoAppDiv.classList.remove('hidden');
+                    loadTodos();
+                    alert('Login successful!');
+                    errorMessage.textContent = '';
+                } else {
+                    errorMessage.textContent = 'Invalid username or password!';
+                }
+            }
+        });
+
+        switchAuthButton.addEventListener('click', () => {
+            isSignup = !isSignup;
+            if (isSignup) {
+                document.getElementById('auth-title').textContent = 'Signup';
+                authButton.textContent = 'Signup';
+            } else {
+                document.getElementById('auth-title').textContent = 'Login';
+                authButton.textContent = 'Login';
+            }
+            errorMessage.textContent = '';
+        });
+
+        document.getElementById('add-todo').addEventListener('click', () => {
+            const todoText = todoInput.value;
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            if (todoText) {
+                const todos = JSON.parse(localStorage.getItem(`${loggedInUser}_todos`)) || [];
+                todos.push(todoText);
+                localStorage.setItem(`${loggedInUser}_todos`, JSON.stringify(todos));
+                addTodoToDOM(todoText);
+                todoInput.value = '';
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('loggedInUser');
+            todoAppDiv.classList.add('hidden');
+            authDiv.classList.remove('hidden');
+            todoList.innerHTML = '';
+        });
+
+        if (localStorage.getItem('loggedInUser')) {
+            authDiv.classList.add('hidden');
+            todoAppDiv.classList.remove('hidden');
+            loadTodos();
+        }
+    </script>
+</body>
+</html>
